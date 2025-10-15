@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <logger name="org.springframework.transaction" level="INFO"/>
+    <logger name="org.springframework.orm" level="INFO"/>
+
+    <springProfile name="verbose">
+        <logger name="io.cockroachdb" level="TRACE"/>
+        <logger name="io.cockroachdb.SQL_TRACE" level="TRACE"/>
+    </springProfile>
+    <springProfile name="!verbose">
+        <logger name="io.cockroachdb" level="DEBUG"/>
+        <logger name="io.cockroachdb.SQL_TRACE" level="DEBUG"/>
+    </springProfile>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>
+
