@@ -14,7 +14,7 @@ public class PoolBaseline {
         baseline.setConnectionTimeout(5 * 60);
         baseline.setMinIdle(4);
         baseline.setMaxSize(512);
-        baseline.setStrategy(PoolingStrategy.DYNAMIC_SIZE);
+        baseline.setPoolingStrategy(PoolingStrategy.DYNAMIC_SIZE);
         return baseline;
     }
 
@@ -28,7 +28,7 @@ public class PoolBaseline {
 
     private int maxSize;
 
-    private PoolingStrategy strategy;
+    private PoolingStrategy poolingStrategy;
 
     public String getName() {
         return name;
@@ -70,23 +70,23 @@ public class PoolBaseline {
         this.maxSize = maxSize;
     }
 
-    public PoolingStrategy getStrategy() {
-        return strategy;
+    public PoolingStrategy getPoolingStrategy() {
+        return poolingStrategy;
     }
 
-    public void setStrategy(PoolingStrategy strategy) {
-        this.strategy = strategy;
+    public void setPoolingStrategy(PoolingStrategy poolingStrategy) {
+        this.poolingStrategy = poolingStrategy;
     }
 
     @Override
     public String toString() {
         return "PoolBaseline{" +
                "name='" + name + '\'' +
-               ", livenessPeriod=" + livenessInterval +
+               ", livenessInterval=" + livenessInterval +
                ", connectionTimeout=" + connectionTimeout +
                ", minIdle=" + minIdle +
                ", maxSize=" + maxSize +
-               ", strategy=" + strategy +
+               ", poolingStrategy=" + poolingStrategy +
                '}';
     }
 }

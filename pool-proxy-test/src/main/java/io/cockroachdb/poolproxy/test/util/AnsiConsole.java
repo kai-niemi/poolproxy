@@ -1,4 +1,4 @@
-package io.cockroachdb.poolproxy.test.shell.util;
+package io.cockroachdb.poolproxy.test.util;
 
 import org.jline.terminal.Terminal;
 import org.springframework.beans.factory.annotation.Autowired;

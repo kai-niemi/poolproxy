@@ -25,9 +25,4 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
                    + "join fetch o.orderItems oi "
                    + "join fetch oi.product")
     Page<Order> findAllOrderDetails(Pageable page);
-
-//    @Query(value = "from Order o "
-//                   + "join fetch o.customer c "
-//                   + "where c.userName=:userName")
-//    List<Order> findOrdersByUserName(@Param("userName") String userName);
 }

@@ -27,7 +27,7 @@ spring:
     noninteractive:
       enabled: false
     history:
-      name: .log/poolproxy.history
+      name: poolproxy.history
 
   flyway:
     enabled: true
@@ -58,13 +58,13 @@ spring:
           use_second_level_cache: false
 
   datasource:
-    url: jdbc:postgresql://localhost:26257/defaultdb?sslmode=disable
+    url: jdbc:postgresql://localhost:26257/pool_proxy?sslmode=disable
     driver-class-name: org.postgresql.Driver
     username: root
     password:
     hikari:
       connection-test-query: SELECT 1
-      maximum-pool-size: 20
+      maximum-pool-size: 10
       minimum-idle: 0
       auto-commit: true
       transaction-isolation: TRANSACTION_SERIALIZABLE

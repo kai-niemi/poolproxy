@@ -33,7 +33,7 @@ public class JdbcPoolBaselineRepository implements PoolBaselineRepository {
                     entity.setConnectionTimeout(rs.getInt("connection_timeout"));
                     entity.setMinIdle(rs.getInt("min_idle"));
                     entity.setMaxSize(rs.getInt("max_size"));
-                    entity.setStrategy(PoolingStrategy.valueOf(rs.getString("strategy")));
+                    entity.setPoolingStrategy(PoolingStrategy.valueOf(rs.getString("strategy")));
                     return entity;
                 }, name);
         return Optional.ofNullable(baseline);
@@ -56,7 +56,7 @@ public class JdbcPoolBaselineRepository implements PoolBaselineRepository {
             ps.setInt(2, baseline.getConnectionTimeout());
             ps.setInt(3, baseline.getMinIdle());
             ps.setInt(4, baseline.getMaxSize());
-            ps.setString(5, baseline.getStrategy().name());
+            ps.setString(5, baseline.getPoolingStrategy().name());
             ps.setString(6, baseline.getName());
         });
         if (rows != 1) {

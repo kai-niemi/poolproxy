@@ -22,6 +22,9 @@ import net.ttddyy.dsproxy.listener.logging.SLF4JLogLevel;
 import net.ttddyy.dsproxy.listener.logging.SLF4JQueryLoggingListener;
 import net.ttddyy.dsproxy.support.ProxyDataSourceBuilder;
 
+import io.cockroachdb.poolproxy.PoolingStrategy;
+import io.cockroachdb.poolproxy.hikari.HikariDataSourceProxy;
+
 @Configuration
 @EnableTransactionManagement(proxyTargetClass = true)
 @EnableAspectJAutoProxy(proxyTargetClass = true)
@@ -38,7 +41,14 @@ public class JpaConfig {
     @Bean
     @Primary
     public DataSource primaryDataSource() {
-        return logger.isTraceEnabled() ? loggingProxy(targetDataSource()) : targetDataSource();
+        return loggingProxy(hikariDataSourceProxy(targetDataSource()));
+    }
+
+    @Bean
+    public HikariDataSourceProxy hikariDataSourceProxy(HikariDataSource hikariDataSource) {
+        HikariDataSourceProxy hikariDataSourceProxy = new HikariDataSourceProxy(hikariDataSource);
+        hikariDataSourceProxy.setPoolName(hikariDataSource.getPoolName());
+        return hikariDataSourceProxy;
     }
 
     @Bean
@@ -48,6 +58,7 @@ public class JpaConfig {
                 .initializeDataSourceBuilder()
                 .type(HikariDataSource.class)
                 .build();
+        ds.setPoolName("pool-proxy-test");
         ds.addDataSourceProperty("reWriteBatchedInserts", true);
         ds.addDataSourceProperty("ApplicationName", "pool-proxy-test");
         return ds;

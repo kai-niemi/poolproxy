@@ -1,4 +1,4 @@
-package io.cockroachdb.poolproxy.test.shell.util;
+package io.cockroachdb.poolproxy.test.util;
 
 import java.io.BufferedReader;
 import java.io.IOException;

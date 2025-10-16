@@ -7,7 +7,8 @@ import io.cockroachdb.poolproxy.test.domain.Address;
 import io.cockroachdb.poolproxy.test.domain.Customer;
 import io.cockroachdb.poolproxy.test.domain.Order;
 import io.cockroachdb.poolproxy.test.domain.Product;
-import io.cockroachdb.poolproxy.test.shell.util.RandomData;
+import io.cockroachdb.poolproxy.test.domain.ShipmentStatus;
+import io.cockroachdb.poolproxy.test.util.RandomData;
 
 public abstract class EntityDoubles {
     private EntityDoubles() {
@@ -53,7 +54,8 @@ public abstract class EntityDoubles {
                                  int numItems) {
 
         Order.Builder ob = Order.builder()
-                .withCustomer(RandomData.selectRandom(customers));
+                .withCustomer(RandomData.selectRandom(customers))
+                .withShipmentStatus(ShipmentStatus.placed);
 
         IntStream.rangeClosed(1, numItems).forEach(value -> {
             Product product = RandomData.selectRandom(products);

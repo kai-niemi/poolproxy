@@ -54,7 +54,7 @@ public class JdbcClusterRepository implements ClusterRepository {
     public void dropSchema() {
         ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
         populator.setCommentPrefix("--");
-        populator.setIgnoreFailedDrops(true);
+        populator.setIgnoreFailedDrops(false);
         populator.addScript(new ClassPathResource("db/drop.sql"));
 
         DatabasePopulatorUtils.execute(populator, jdbcTemplate.getDataSource());

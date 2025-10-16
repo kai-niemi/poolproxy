@@ -14,14 +14,16 @@ import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 import org.springframework.shell.table.TableModel;
+import org.springframework.util.Assert;
 
 import io.cockroachdb.poolproxy.test.domain.Customer;
 import io.cockroachdb.poolproxy.test.domain.Order;
+import io.cockroachdb.poolproxy.test.domain.OrderItem;
 import io.cockroachdb.poolproxy.test.domain.OrderSystem;
 import io.cockroachdb.poolproxy.test.domain.Product;
-import io.cockroachdb.poolproxy.test.shell.util.AnsiConsole;
-import io.cockroachdb.poolproxy.test.shell.util.StreamingUtils;
-import io.cockroachdb.poolproxy.test.shell.util.TableUtils;
+import io.cockroachdb.poolproxy.test.util.AnsiConsole;
+import io.cockroachdb.poolproxy.test.util.StreamingUtils;
+import io.cockroachdb.poolproxy.test.util.TableUtils;
 
 @ShellComponent
 @ShellCommandGroup(CommandGroups.DOMAIN)
@@ -34,9 +36,14 @@ public class DomainCommands extends AbstractShellComponent {
     @Autowired
     private OrderSystem orderSystem;
 
-    @ShellMethod(value = "Delete all orders and catalog data", key = {"clear-all", "ca"})
-    public void clearAll() {
-        orderSystem.clearAll();
+    @ShellMethod(value = "Delete all orders and catalog data", key = {"delete-all", "da"})
+    public void deleteAll() {
+        orderSystem.deleteAll();
+    }
+
+    @ShellMethod(value = "Delete all orders", key = {"delete-orders", "do"})
+    public void deleteOrders() {
+        orderSystem.deleteOrders();
     }
 
     @ShellMethod(value = "Create products in batches", key = {"create-products", "cp"})
@@ -61,13 +68,16 @@ public class DomainCommands extends AbstractShellComponent {
                 });
     }
 
-    @ShellMethod(value = "Place orders in batches", key = {"create-order", "co"})
+    @ShellMethod(value = "Create orders in batches", key = {"create-orders", "co"})
     public void placeOrders(@ShellOption(help = "total number of orders", defaultValue = "512") int count,
                             @ShellOption(help = "batch size", defaultValue = "64") int batchSize,
                             @ShellOption(help = "number of order items per order", defaultValue = "4") int numItems) {
 
         final List<Customer> customers = orderSystem.listAllCustomers(count).toList();
         final List<Product> products = orderSystem.listAllProducts(count).toList();
+
+        Assert.state(!customers.isEmpty(), "no customers");
+        Assert.state(!products.isEmpty(), "no products");
 
         StreamingUtils.chunkedStream(IntStream.rangeClosed(1, count).boxed(), batchSize)
                 .forEach(chunk -> {
@@ -81,9 +91,9 @@ public class DomainCommands extends AbstractShellComponent {
     public void printOrders(@ShellOption(help = "page size", defaultValue = "64") int pageSize,
                             @ShellOption(help = "include all order details", defaultValue = "false") boolean details) {
         if (details) {
-            orderSystem.listAllOrdersWithDetails(pageSize).forEach(this::printWithDetails);
+            orderSystem.listAllOrdersWithDetails(pageSize).forEach(this::printOrderDetailPage);
         } else {
-            orderSystem.listAllOrders(pageSize).forEach(this::print);
+            printOrderPage(orderSystem.listAllOrders(pageSize));
         }
     }
 
@@ -94,39 +104,10 @@ public class DomainCommands extends AbstractShellComponent {
 
     @ShellMethod(value = "Print customers", key = {"print-customers", "pc"})
     public void printCustomers(@ShellOption(help = "page size", defaultValue = "64") int pageSize) {
-        printPage(orderSystem.listAllCustomers(pageSize));
+        printCustomerPage(orderSystem.listAllCustomers(pageSize));
     }
 
-    private void print(Order order) {
-        Customer c = order.getCustomer();
-        logger.info("""
-                Order placed by: %s
-                     Total cost: %s
-                """.formatted(c.getUserName(), order.getTotalPrice()));
-    }
-
-    private void printWithDetails(Order order) {
-        order.getOrderItems().forEach(orderItem -> {
-            Product p = orderItem.getProduct();
-
-            logger.info("""
-                     Product name: %s
-                    Product price: %s
-                      Product sku: %s
-                         Item qty: %s
-                       Unit price: %s
-                       Total cost: %s
-                    """.formatted(
-                    p.getName(),
-                    p.getPrice(),
-                    p.getSku(),
-                    orderItem.getQuantity(),
-                    orderItem.getUnitPrice(),
-                    orderItem.totalCost()));
-        });
-    }
-
-    private void printPage(Page<Customer> page) {
+    private void printCustomerPage(Page<Customer> page) {
         ansiConsole.cyan(TableUtils.prettyPrint(
                 new TableModel() {
                     @Override
@@ -185,8 +166,7 @@ public class DomainCommands extends AbstractShellComponent {
                 }));
     }
 
-/*
-    private void printPage(Page<Order> page) {
+    private void printOrderPage(Page<Order> page) {
         ansiConsole.cyan(TableUtils.prettyPrint(
                 new TableModel() {
                     @Override
@@ -196,7 +176,7 @@ public class DomainCommands extends AbstractShellComponent {
 
                     @Override
                     public int getColumnCount() {
-                        return 5;
+                        return 4;
                     }
 
                     @Override
@@ -207,16 +187,13 @@ public class DomainCommands extends AbstractShellComponent {
                                     return "#";
                                 }
                                 case 1 -> {
-                                    return "First Name";
+                                    return "Id";
                                 }
                                 case 2 -> {
-                                    return "Last Name";
+                                    return "Customer";
                                 }
                                 case 3 -> {
-                                    return "City";
-                                }
-                                case 4 -> {
-                                    return "Id";
+                                    return "Order Total";
                                 }
                             }
                             return "??";
@@ -241,6 +218,69 @@ public class DomainCommands extends AbstractShellComponent {
                     }
                 }));
     }
-*/
 
+
+    private void printOrderDetailPage(Order order) {
+        List<OrderItem> orderItems = order.getOrderItems();
+
+        ansiConsole.yellow("%s".formatted(order.getId())).nl();
+
+        ansiConsole.cyan(TableUtils.prettyPrint(
+                new TableModel() {
+                    @Override
+                    public int getRowCount() {
+                        return orderItems.size() + 1;
+                    }
+
+                    @Override
+                    public int getColumnCount() {
+                        return 5;
+                    }
+
+                    @Override
+                    public Object getValue(int row, int column) {
+                        if (row == 0) {
+                            switch (column) {
+                                case 0 -> {
+                                    return "#";
+                                }
+                                case 1 -> {
+                                    return "Product";
+                                }
+                                case 2 -> {
+                                    return "Unit Price";
+                                }
+                                case 3 -> {
+                                    return "Qty";
+                                }
+                                case 4 -> {
+                                    return "Total";
+                                }
+                            }
+                            return "??";
+                        }
+
+                        OrderItem orderItem = orderItems.get(row - 1);
+
+                        switch (column) {
+                            case 0 -> {
+                                return row;
+                            }
+                            case 1 -> {
+                                return orderItem.getProduct().getName();
+                            }
+                            case 2 -> {
+                                return orderItem.getUnitPrice();
+                            }
+                            case 3 -> {
+                                return orderItem.getQuantity();
+                            }
+                            case 4 -> {
+                                return orderItem.totalCost();
+                            }
+                        }
+                        return "??";
+                    }
+                }));
+    }
 }

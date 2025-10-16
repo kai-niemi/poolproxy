@@ -31,7 +31,7 @@ public class PoolBaselineRepositoryTest extends AbstractIntegrationTest {
         baseline.setMaxSize(11);
         baseline.setConnectionTimeout(15);
         baseline.setLivenessInterval(20);
-        baseline.setStrategy(PoolingStrategy.FIXED_SIZE);
+        baseline.setPoolingStrategy(PoolingStrategy.FIXED_SIZE);
 
         repository.update(baseline);
     }
@@ -46,7 +46,7 @@ public class PoolBaselineRepositoryTest extends AbstractIntegrationTest {
         assertThat(baseline.getMaxSize()).isEqualTo(11);
         assertThat(baseline.getConnectionTimeout()).isEqualTo(15);
         assertThat(baseline.getLivenessInterval()).isEqualTo(20);
-        assertThat(baseline.getStrategy()).isEqualTo(PoolingStrategy.FIXED_SIZE);
+        assertThat(baseline.getPoolingStrategy()).isEqualTo(PoolingStrategy.FIXED_SIZE);
     }
 
 }

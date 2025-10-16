@@ -13,9 +13,10 @@ import jakarta.persistence.LockModeType;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, UUID> {
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<Product> findProductBySku(String sku);
+    @Query("select p from Product p where p.sku=:sku")
+    Optional<Product> findProductBySku(@Param("sku") String sku);
 
     @Query("select p from Product p where p.sku=:sku")
-    Optional<Product> findProductBySkuNoLock(@Param("sku") String sku);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<Product> findProductBySkuForUpdate(@Param("sku") String sku);
 }

@@ -23,8 +23,6 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <java.version>21</java.version>
-<!--        <source.level>17</source.level>-->
-<!--        <target.level>17</target.level>-->
         <maven.compiler.xlint.extras/>
         <groups>unit-test</groups>
 
@@ -165,8 +163,8 @@
                         <parameters>true</parameters>
                         <showDeprecation>false</showDeprecation>
                         <showWarnings>false</showWarnings>
-<!--                        <source>${source.level}</source>-->
-<!--                        <target>${target.level}</target>-->
+                        <!--                        <source>${source.level}</source>-->
+                        <!--                        <target>${target.level}</target>-->
                         <compilerArgs>
                             <arg>-Xlint:all${maven.compiler.xlint.extras}</arg>
                         </compilerArgs>
@@ -203,7 +201,7 @@
                     <version>3.5.4</version>
                     <configuration>
                         <groups>${groups}</groups>
-<!--                        <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>-->
+                        <!--                        <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>-->
                     </configuration>
                 </plugin>
             </plugins>
@@ -228,7 +226,7 @@
     <profiles>
         <!-- Integration tests matching group tags -->
         <profile>
-            <id>it-local</id>
+            <id>it</id>
             <build>
                 <plugins>
                     <plugin>
@@ -236,7 +234,17 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <groups>integration-test</groups>
-                            <excludedGroups>unit-test,interactive-test</excludedGroups>
+                            <excludedGroups>unit-test</excludedGroups>
+                            <systemPropertyVariables>
+                                <spring.datasource.url>
+                                    jdbc:postgresql://localhost:26257/pool_proxy?sslmode=disable
+                                </spring.datasource.url>
+<!--
+                                <spring.datasource.url>
+                                    jdbc:postgresql://192.168.1.99:26257/pool_proxy?sslmode=disable
+                                </spring.datasource.url>
+-->
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                 </plugins>

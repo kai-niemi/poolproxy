@@ -1,5 +1,4 @@
 .idea/
-.log/
 target/
 *.iml
 *.ipr
@@ -7,3 +6,4 @@ target/
 .DS_Store
 .DS_Store?
 Thumbs.db
+/poolproxy.history

@@ -61,7 +61,6 @@ public class C3P0DataSourceProxyTest extends AbstractIntegrationTest {
         dataSourceProxy.setTargetDataSource(dataSource);
         dataSourceProxy.setClusterRepository(clusterRepositoryMock);
         dataSourceProxy.setPoolMetricsRepository(poolMetricsRepositoryMock);
-        dataSourceProxy.setPoolingStrategy(PoolingStrategy.DYNAMIC_SIZE);
         dataSourceProxy.afterPropertiesSet();
 
         try (Connection connection = dataSourceProxy.getConnection()) {
@@ -86,7 +85,6 @@ public class C3P0DataSourceProxyTest extends AbstractIntegrationTest {
         dataSourceProxy.setTargetDataSource(dataSource);
         dataSourceProxy.setClusterRepository(clusterRepositoryMock);
         dataSourceProxy.setPoolMetricsRepository(poolMetricsRepositoryMock);
-        dataSourceProxy.setPoolingStrategy(PoolingStrategy.FIXED_SIZE);
         dataSourceProxy.afterPropertiesSet();
 
         try (Connection connection = dataSourceProxy.getConnection()) {

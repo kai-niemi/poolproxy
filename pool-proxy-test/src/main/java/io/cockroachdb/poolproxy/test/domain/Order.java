@@ -22,6 +22,8 @@ public class Order extends AbstractEntity<UUID> {
     public static final class Builder {
         private Customer customer;
 
+        private ShipmentStatus shipmentStatus = ShipmentStatus.placed;
+
         private final List<OrderItem> orderItems = new ArrayList<>();
 
         private Builder() {
@@ -29,6 +31,11 @@ public class Order extends AbstractEntity<UUID> {
 
         public Builder withCustomer(Customer customer) {
             this.customer = customer;
+            return this;
+        }
+
+        public Builder withShipmentStatus(ShipmentStatus shipmentStatus) {
+            this.shipmentStatus = shipmentStatus;
             return this;
         }
 
@@ -44,7 +51,9 @@ public class Order extends AbstractEntity<UUID> {
                 throw new IllegalStateException("Empty order");
             }
             Order order = new Order();
+            order.shipmentStatus = this.shipmentStatus;
             order.customer = this.customer;
+            order.deliveryAddress = customer.getAddress();
             order.orderItems.addAll(this.orderItems);
             order.totalPrice = order.subTotal();
             return order;
@@ -77,8 +86,7 @@ public class Order extends AbstractEntity<UUID> {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 25, nullable = false)
-//    @Type(type = "custom_enum")
-    private ShipmentStatus status = ShipmentStatus.placed;
+    private ShipmentStatus shipmentStatus;
 
     @Basic(fetch = FetchType.LAZY)
     @Column(nullable = false, updatable = false, name = "date_placed")

@@ -8,7 +8,9 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 
 public interface OrderSystem {
-    void clearAll();
+    void deleteAll();
+
+    void deleteOrders();
 
     void createProducts(Collection<Product> products);
 
@@ -24,11 +26,5 @@ public interface OrderSystem {
 
     Page<Order> listAllOrdersWithDetails(int limit);
 
-    Order findOrderById(UUID id);
-
-    Product findProductBySku(String sku);
-
     BigDecimal getTotalOrderPrice();
-
-    void removeOrders();
 }

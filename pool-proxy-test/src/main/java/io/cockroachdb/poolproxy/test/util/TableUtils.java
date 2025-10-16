@@ -1,4 +1,4 @@
-package io.cockroachdb.poolproxy.test.shell.util;
+package io.cockroachdb.poolproxy.test.util;
 
 import org.springframework.shell.table.BorderStyle;
 import org.springframework.shell.table.TableBuilder;

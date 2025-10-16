@@ -42,6 +42,8 @@ import io.cockroachdb.poolproxy.repository.jdbc.JdbcPoolMetricsRepository;
  */
 public abstract class AbstractPoolingDataSourceProxy<T extends DataSource> extends DelegatingDataSource
         implements AutoCloseable {
+    private static final int UPDATE_INTERVAL = 30;
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private ClusterRepository clusterRepository;
@@ -49,8 +51,6 @@ public abstract class AbstractPoolingDataSourceProxy<T extends DataSource> exten
     private PoolBaselineRepository poolBaselineRepository;
 
     private PoolMetricsRepository poolMetricsRepository;
-
-    private PoolingStrategy poolingStrategy = PoolingStrategy.DYNAMIC_SIZE;
 
     private ScheduledExecutorService scheduledExecutorService;
 
@@ -68,12 +68,10 @@ public abstract class AbstractPoolingDataSourceProxy<T extends DataSource> exten
     }
 
     public void setPoolName(String poolName) {
-        Objects.requireNonNull(poolName);
         this.poolName = poolName;
     }
 
     public void setBaseline(String baseline) {
-        Objects.requireNonNull(poolName);
         this.baseline = baseline;
     }
 
@@ -87,10 +85,6 @@ public abstract class AbstractPoolingDataSourceProxy<T extends DataSource> exten
 
     public void setPoolMetricsRepository(PoolMetricsRepository poolMetricsRepository) {
         this.poolMetricsRepository = poolMetricsRepository;
-    }
-
-    public void setPoolingStrategy(PoolingStrategy poolingStrategy) {
-        this.poolingStrategy = poolingStrategy;
     }
 
     @Override
@@ -108,8 +102,6 @@ public abstract class AbstractPoolingDataSourceProxy<T extends DataSource> exten
     @Override
     public final void afterPropertiesSet() {
         super.afterPropertiesSet();
-
-        Objects.requireNonNull(poolingStrategy, "configStrategy is null");
 
         if (Objects.isNull(poolName)) {
             poolName = UUID.randomUUID().toString();
@@ -141,7 +133,7 @@ public abstract class AbstractPoolingDataSourceProxy<T extends DataSource> exten
             } catch (SQLException e) {
                 logger.warn("Failed to update pool instance liveness record", e);
             }
-        }, 30, 30, TimeUnit.SECONDS);
+        }, 5, UPDATE_INTERVAL, TimeUnit.SECONDS);
     }
 
     @Override
@@ -163,48 +155,60 @@ public abstract class AbstractPoolingDataSourceProxy<T extends DataSource> exten
     }
 
     private void applyDataSourceProperties() throws SQLException {
-        Assert.notNull(baseline, "baseline is null");
-        Assert.notNull(poolName, "poolName is null");
+        Assert.notNull(baseline, "baseline not set");
+        Assert.notNull(poolName, "poolName not set");
 
         final ClusterInfo clusterInfo = clusterRepository.findClusterInfo();
 
         final PoolBaseline poolBaseline = poolBaselineRepository.findByName(baseline)
                 .orElse(PoolBaseline.withDefaults());
 
-        final int instanceCount = Math.max(1, poolMetricsRepository.countAll());
+        PoolingStrategy poolingStrategy = poolBaseline.getPoolingStrategy();
+        Objects.requireNonNull(poolingStrategy, "poolingStrategy not set");
 
-        final PoolMetrics poolMetrics = poolAdapter().collectPoolMetrics();
-        {
-            poolMetrics.setPoolName(poolName);
-            poolMetrics.setExpiredAt(LocalDateTime.now().plusSeconds(poolBaseline.getLivenessInterval()));
-            poolMetricsRepository.createOrUpdate(poolMetrics);
-        }
+        final int poolCountBefore = Math.max(1, poolMetricsRepository.countAll());
 
-        int minIdle = poolingStrategy.minIdle(clusterInfo, poolBaseline, instanceCount);
-        int maxSize = poolingStrategy.maxSize(clusterInfo, poolBaseline, instanceCount);
-        Duration maxLifeTime = poolingStrategy.maxLifetime(clusterInfo, poolBaseline, instanceCount);
+        final PoolMetrics poolMetricsBefore = poolAdapter().collectPoolMetrics();
+        poolMetricsBefore.setPoolName(poolName);
+        poolMetricsBefore.setExpiredAt(LocalDateTime.now().plusSeconds(poolBaseline.getLivenessInterval()));
+
+        poolMetricsRepository.createOrUpdate(poolMetricsBefore);
+
+        final int poolCountAfter = Math.max(1, poolMetricsRepository.countAll());
+
+        int minIdle = poolingStrategy.minIdle(clusterInfo, poolBaseline, poolCountAfter);
+        int maxSize = poolingStrategy.maxSize(clusterInfo, poolBaseline, poolCountAfter);
+        Duration maxLifeTime = poolingStrategy.maxLifetime(clusterInfo, poolBaseline, poolCountAfter);
 
         poolAdapter().applyPoolConfiguration(minIdle, maxSize, maxLifeTime);
 
         if (logger.isDebugEnabled()) {
-            logger.debug("""
-                       Update pool: %s
-                      Cluster info: %s
-                     Pool baseline: %s
-                        Pool count: %d
-                    Pool instances: %s
-                          Min idle: %s
-                          Max size: %s
-                      Max lifetime: %s
-                    """.formatted(poolName,
-                    clusterInfo,
-                    poolBaseline,
-                    instanceCount,
-                    poolMetrics,
-                    minIdle,
-                    maxSize,
-                    maxLifeTime
-            ));
+            final PoolMetrics poolMetricsAfter = poolAdapter().collectPoolMetrics();
+            poolMetricsAfter.setPoolName(poolMetricsBefore.getPoolName());
+            poolMetricsAfter.setExpiredAt(poolMetricsBefore.getExpiredAt());
+
+            logger.debug(("""
+                    Updating connection pool:
+                                   Pool name: %s
+                                Cluster info: %s
+                               Pool baseline: %s
+                                Pool metrics: %s
+                        Pool metrics (after): %s
+                                  Pool count: %d (%d)
+                      Minimum idle pool size: %s
+                           Maximum pool size: %s
+                     Max connection lifetime: %s""")
+                    .formatted(poolName,
+                            clusterInfo,
+                            poolBaseline,
+                            poolMetricsBefore,
+                            poolMetricsAfter,
+                            poolCountBefore,
+                            poolCountAfter,
+                            minIdle,
+                            maxSize,
+                            maxLifeTime
+                    ));
         }
     }
 

@@ -2,7 +2,6 @@ package io.cockroachdb.poolproxy.hikari;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -11,14 +10,17 @@ import javax.sql.DataSource;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.zaxxer.hikari.HikariDataSource;
 
 import io.cockroachdb.poolproxy.PoolingStrategy;
 import io.cockroachdb.poolproxy.model.ClusterInfo;
+import io.cockroachdb.poolproxy.model.PoolBaseline;
 import io.cockroachdb.poolproxy.model.PoolMetrics;
 import io.cockroachdb.poolproxy.repository.ClusterRepository;
+import io.cockroachdb.poolproxy.repository.PoolBaselineRepository;
 import io.cockroachdb.poolproxy.repository.PoolMetricsRepository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
@@ -33,6 +35,8 @@ public class HikariDataSourceProxyTest extends AbstractIntegrationTest {
     private static ClusterRepository clusterRepositoryMock;
 
     private static PoolMetricsRepository poolMetricsRepositoryMock;
+
+    private static PoolBaselineRepository poolBaselineRepository;
 
     @Autowired
     private DataSource dataSource;
@@ -53,6 +57,16 @@ public class HikariDataSourceProxyTest extends AbstractIntegrationTest {
         when(poolMetricsRepositoryMock.findByName(any())).thenReturn(
                 Optional.of(PoolMetrics.withDefaults("test")));
         when(poolMetricsRepositoryMock.countAll()).thenReturn(1);
+
+        PoolBaseline dynamicBaseline = PoolBaseline.withDefaults();
+        dynamicBaseline.setPoolingStrategy(PoolingStrategy.DYNAMIC_SIZE);
+
+        PoolBaseline fixedBaseline = PoolBaseline.withDefaults();
+        fixedBaseline.setPoolingStrategy(PoolingStrategy.FIXED_SIZE);
+
+        poolBaselineRepository = mock(PoolBaselineRepository.class);
+        when(poolBaselineRepository.findByName(Mockito.eq("dynamic"))).thenReturn(Optional.of(dynamicBaseline));
+        when(poolBaselineRepository.findByName(Mockito.eq("fixed"))).thenReturn(Optional.of(fixedBaseline));
     }
 
     @Test
@@ -67,7 +81,8 @@ public class HikariDataSourceProxyTest extends AbstractIntegrationTest {
         dataSourceProxy.setTargetDataSource(dataSource);
         dataSourceProxy.setClusterRepository(clusterRepositoryMock);
         dataSourceProxy.setPoolMetricsRepository(poolMetricsRepositoryMock);
-        dataSourceProxy.setPoolingStrategy(PoolingStrategy.DYNAMIC_SIZE);
+        dataSourceProxy.setPoolBaselineRepository(poolBaselineRepository);
+        dataSourceProxy.setBaseline("dynamic");
         dataSourceProxy.afterPropertiesSet();
 
         try (Connection connection = dataSourceProxy.getConnection()) {
@@ -94,7 +109,8 @@ public class HikariDataSourceProxyTest extends AbstractIntegrationTest {
         dataSourceProxy.setTargetDataSource(dataSource);
         dataSourceProxy.setClusterRepository(clusterRepositoryMock);
         dataSourceProxy.setPoolMetricsRepository(poolMetricsRepositoryMock);
-        dataSourceProxy.setPoolingStrategy(PoolingStrategy.FIXED_SIZE);
+        dataSourceProxy.setPoolBaselineRepository(poolBaselineRepository);
+        dataSourceProxy.setBaseline("fixed");
         dataSourceProxy.afterPropertiesSet();
 
         try (Connection connection = dataSourceProxy.getConnection()) {

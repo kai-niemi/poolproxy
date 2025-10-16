@@ -8,7 +8,6 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.orm.ObjectRetrievalFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,12 +27,18 @@ public class OrderSystemImpl implements OrderSystem {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void clearAll() {
+    public void deleteAll() {
         Assert.isTrue(TransactionSynchronizationManager.isActualTransactionActive(), "TX not active");
 
         orderRepository.deleteAll();
         productRepository.deleteAll();
         customerRepository.deleteAll();
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void deleteOrders() {
+        orderRepository.deleteAllInBatch();
     }
 
     @Override
@@ -66,11 +71,13 @@ public class OrderSystemImpl implements OrderSystem {
     }
 
     @Override
+    @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
     public Page<Customer> listAllCustomers(int limit) {
         return customerRepository.findAll(PageRequest.ofSize(limit));
     }
 
     @Override
+    @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
     public Page<Product> listAllProducts(int limit) {
         return productRepository.findAll(PageRequest.ofSize(limit));
     }
@@ -88,19 +95,6 @@ public class OrderSystemImpl implements OrderSystem {
     }
 
     @Override
-    public Order findOrderById(UUID id) {
-        return orderRepository.findOrderById(id)
-                .orElseThrow(() -> new ObjectRetrievalFailureException(Order.class, id));
-    }
-
-    @Override
-    @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-    public Product findProductBySku(String sku) {
-        return productRepository.findProductBySkuNoLock(sku)
-                .orElseThrow(() -> new ObjectRetrievalFailureException(Product.class, sku));
-    }
-
-    @Override
     @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
     public BigDecimal getTotalOrderPrice() {
         BigDecimal price = BigDecimal.ZERO;
@@ -109,11 +103,5 @@ public class OrderSystemImpl implements OrderSystem {
             price = price.add(order.getTotalPrice());
         }
         return price;
-    }
-
-    @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void removeOrders() {
-        orderRepository.deleteAllInBatch();
     }
 }

@@ -17,7 +17,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
 
-import io.cockroachdb.poolproxy.test.shell.util.AnsiConsole;
+import io.cockroachdb.poolproxy.test.util.AnsiConsole;
 import io.cockroachdb.poolproxy.test.shell.RuntimeIOException;
 
 @Configuration
@@ -73,11 +73,11 @@ public class Main {
             }
         }
 
-        if (profiles.isEmpty()) {
-            profiles.add("default");
+        if (!profiles.isEmpty()) {
+//            profiles.add("default");
+            System.setProperty("spring.profiles.active", String.join(",", profiles));
         }
 
-        System.setProperty("spring.profiles.active", String.join(",", profiles));
 
         new SpringApplicationBuilder(Main.class)
                 .web(WebApplicationType.NONE)

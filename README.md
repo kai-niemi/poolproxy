@@ -14,8 +14,8 @@
 # About
 
 A simple database connection pool proxy library for CockroachDB. It configures the pool size 
-and timeouts based on CockroachDB production guidelines relative to cluster provisioning
-and node availability. 
+and timeouts based on CockroachDB [production guidelines](https://www.cockroachlabs.com/docs/v25.3/connection-pooling?filters=advanced#size-connection-pools) 
+relative to cluster provisioning and node availability. 
 
 In addition, it periodically adjusts the pool size based on 
 current node availability and aggregated pool metrics. Thus, the goal is to provide
@@ -34,17 +34,63 @@ connection timeout.
 
 - Supports HikariCP
 - Supports C3P0
-- Dynamic and fixed size pool sizing
-- Database driven configuration and stats
+- Dynamic and fixed size pool sizing strategies
+- Database driven pool configuration and statistics aggregation
 
 ## Compatibility
 
-- JDK17+
+- JDK21+
 - MacOS / Linux
 - CockroachDB
 - Spring Boot 3.x
 
-# Building and Running
+## How to use
+           
+Example usage in a spring boot bean configuration. The pool name is used to uniquely identify 
+the pool instance across a fleet of multiple apps and pools (recommended). If no name is assigned, an ephemeral 
+UUID is used instead scoped to the app life cycle.
+
+```java
+@Configuration
+@EnableTransactionManagement(proxyTargetClass = true)
+public class JpaConfig {
+    @Bean
+    @ConfigurationProperties("spring.datasource")
+    public DataSourceProperties dataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
+    @Bean
+    @Primary
+    public DataSource primaryDataSource() {
+        return hikariDataSourceProxy(targetDataSource());
+    }
+
+    @Bean
+    public HikariDataSourceProxy hikariDataSourceProxy(HikariDataSource hikariDataSource) {
+        HikariDataSourceProxy hikariDataSourceProxy = new HikariDataSourceProxy(hikariDataSource);
+        hikariDataSourceProxy.setPoolName(hikariDataSource.getPoolName());
+        return hikariDataSourceProxy;
+    }
+
+    @Bean
+    @ConfigurationProperties("spring.datasource.hikari")
+    public HikariDataSource targetDataSource() {
+        HikariDataSource ds = dataSourceProperties()
+                .initializeDataSourceBuilder()
+                .type(HikariDataSource.class)
+                .build();
+        ds.setPoolName("pool-proxy-test");
+        ds.addDataSourceProperty("reWriteBatchedInserts", true);
+        ds.addDataSourceProperty("ApplicationName", "pool-proxy-test");
+        return ds;
+    }
+}
+```
+            
+The table schema used by the library is available [here](pool-proxy-core/src/main/resources/db/create.sql).
+
+# Building
 
 ## Install the JDK
 
@@ -52,11 +98,11 @@ MacOS (using sdkman):
 
     curl -s "https://get.sdkman.io" | bash
     sdk list java
-    sdk install java 17.0 (pick version)  
+    sdk install java 21.0 (pick version)  
 
 Ubuntu:
 
-    sudo apt-get install openjdk-17-jdk
+    sudo apt-get install openjdk-21-jdk
 
 ## Clone the project
 
