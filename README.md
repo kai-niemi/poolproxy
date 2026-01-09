@@ -1,10 +1,11 @@
-[![Java CI](https://github.com/kai-niemi/pool-proxy/actions/workflows/maven.yml/badge.svg?branch=main)](https://github.com/kai-niemi/pool-proxy/actions/workflows/maven.yml)
+[![Java CI](https://github.com/kai-niemi/poolproxy/actions/workflows/maven.yml/badge.svg?branch=main)](https://github.com/kai-niemi/poolproxy/actions/workflows/maven.yml)
 
 <!-- TOC -->
 * [About](#about)
   * [Main features](#main-features)
   * [Compatibility](#compatibility)
-* [Building and Running](#building-and-running)
+  * [How to use](#how-to-use)
+* [Building](#building)
   * [Install the JDK](#install-the-jdk)
   * [Clone the project](#clone-the-project)
   * [Build the artifact](#build-the-artifact)
@@ -28,7 +29,7 @@ through directly to the target datasource. The proxy only adjusts the `minIdle` 
 `maxPoolSize` settings and `maxLifetime` that should be lower than any database imposed 
 connection timeout.
 
-![img](pool-proxy.jpg)
+![img](poolproxy.jpg)
 
 ## Main features
 
@@ -80,15 +81,15 @@ public class JpaConfig {
                 .initializeDataSourceBuilder()
                 .type(HikariDataSource.class)
                 .build();
-        ds.setPoolName("pool-proxy-test");
+        ds.setPoolName("poolproxy-test");
         ds.addDataSourceProperty("reWriteBatchedInserts", true);
-        ds.addDataSourceProperty("ApplicationName", "pool-proxy-test");
+        ds.addDataSourceProperty("ApplicationName", "poolproxy-test");
         return ds;
     }
 }
 ```
             
-The table schema used by the library is available [here](pool-proxy-core/src/main/resources/db/create.sql).
+The table schema used by the library is available [here](poolproxy-core/src/main/resources/db/create.sql).
 
 # Building
 
@@ -106,7 +107,7 @@ Ubuntu:
 
 ## Clone the project
 
-    git clone git@github.com:kai-niemi/pool-proxy && cd pool-proxy
+    git clone git@github.com:kai-niemi/poolproxy && cd poolproxy
 
 ## Build the artifact
 

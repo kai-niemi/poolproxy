@@ -5,17 +5,17 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.6</version>
+        <version>4.0.0</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
-    <groupId>io.cockroachdb.pool-proxy</groupId>
-    <artifactId>pool-proxy-parent</artifactId>
+    <groupId>io.cockroachdb.poolproxy</groupId>
+    <artifactId>poolproxy-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <description>
-        Elastic connection pool proxies for CockroachDB
+        Elastic connection pool proxy for CockroachDB
     </description>
 
     <properties>
@@ -26,15 +26,14 @@
         <maven.compiler.xlint.extras/>
         <groups>unit-test</groups>
 
-        <spring-boot.version>3.5.6</spring-boot.version>
         <spring-shell.version>3.4.1</spring-shell.version>
     </properties>
 
     <modules>
-        <module>pool-proxy-core</module>
-        <module>pool-proxy-hikaricp</module>
-        <module>pool-proxy-c3p0</module>
-        <module>pool-proxy-test</module>
+        <module>poolproxy-core</module>
+        <module>poolproxy-hikaricp</module>
+        <module>poolproxy-c3p0</module>
+        <module>poolproxy-test</module>
     </modules>
 
     <dependencyManagement>
@@ -45,23 +44,6 @@
                 <version>${spring-shell.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter</artifactId>
-                <version>${spring-boot.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-test</artifactId>
-                <version>${spring-boot.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.flywaydb</groupId>
-                <artifactId>flyway-core</artifactId>
-                <!-- Downgrade to avoid issues with 10.x -->
-                <version>9.22.3</version>
             </dependency>
             <dependency>
                 <groupId>net.ttddyy</groupId>
@@ -76,7 +58,7 @@
             <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
-                <version>42.7.7</version>
+                <version>42.7.8</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
@@ -85,18 +67,9 @@
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-engine</artifactId>
-                <version>5.12.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-params</artifactId>
-                <version>5.12.2</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-core</artifactId>
-                <version>5.17.0</version>
+                <version>5.14.0</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -104,9 +77,9 @@
     <inceptionYear>2025</inceptionYear>
 
     <scm>
-        <connection>scm:git:git@github.com:kai-niemi/pool-proxy.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com:kai-niemi/pool-proxy.git</developerConnection>
-        <url>https://github.com/kai-niemi/pool-proxy.git</url>
+        <connection>scm:git:git@github.com:kai-niemi/poolproxy.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:kai-niemi/poolproxy.git</developerConnection>
+        <url>https://github.com/kai-niemi/poolproxy.git</url>
         <tag>HEAD</tag>
     </scm>
 
@@ -128,7 +101,7 @@
 
     <issueManagement>
         <system>GitHub</system>
-        <url>https://github.com/kai-niemi/pool-proxy/issues</url>
+        <url>https://github.com/kai-niemi/poolproxy/issues</url>
     </issueManagement>
 
     <build>
@@ -139,7 +112,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-clean-plugin</artifactId>
-                    <version>3.4.0</version>
+                    <version>3.5.0</version>
                     <configuration>
                         <failOnError>false</failOnError>
                         <filesets>
@@ -158,13 +131,13 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.13.0</version>
+                    <version>3.14.1</version>
                     <configuration>
                         <parameters>true</parameters>
                         <showDeprecation>false</showDeprecation>
                         <showWarnings>false</showWarnings>
-                        <!--                        <source>${source.level}</source>-->
-                        <!--                        <target>${target.level}</target>-->
+                        <source>21</source>
+                        <target>21</target>
                         <compilerArgs>
                             <arg>-Xlint:all${maven.compiler.xlint.extras}</arg>
                         </compilerArgs>
@@ -186,7 +159,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-dependency-plugin</artifactId>
-                    <version>3.8.1</version>
+                    <version>3.9.0</version>
                     <executions>
                         <execution>
                             <goals>
@@ -201,7 +174,7 @@
                     <version>3.5.4</version>
                     <configuration>
                         <groups>${groups}</groups>
-                        <!--                        <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>-->
+<!--                        <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>-->
                     </configuration>
                 </plugin>
             </plugins>
@@ -237,13 +210,8 @@
                             <excludedGroups>unit-test</excludedGroups>
                             <systemPropertyVariables>
                                 <spring.datasource.url>
-                                    jdbc:postgresql://localhost:26257/pool_proxy?sslmode=disable
+                                    jdbc:postgresql://localhost:26257/defaultdb?sslmode=disable
                                 </spring.datasource.url>
-<!--
-                                <spring.datasource.url>
-                                    jdbc:postgresql://192.168.1.99:26257/pool_proxy?sslmode=disable
-                                </spring.datasource.url>
--->
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
