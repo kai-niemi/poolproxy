@@ -1,4 +1,4 @@
-[![Java CI](https://github.com/kai-niemi/poolproxy/actions/workflows/maven.yml/badge.svg?branch=main)](https://github.com/kai-niemi/poolproxy/actions/workflows/maven.yml)
+[![Java CI](https://github.com/kai-niemi/pool-proxy/actions/workflows/maven.yml/badge.svg?branch=main)](https://github.com/kai-niemi/pool-proxy/actions/workflows/maven.yml)
 
 <!-- TOC -->
 * [About](#about)
@@ -29,7 +29,7 @@ through directly to the target datasource. The proxy only adjusts the `minIdle` 
 `maxPoolSize` settings and `maxLifetime` that should be lower than any database imposed 
 connection timeout.
 
-![img](poolproxy.jpg)
+![img](pool-proxy.jpg)
 
 ## Main features
 
@@ -81,15 +81,15 @@ public class JpaConfig {
                 .initializeDataSourceBuilder()
                 .type(HikariDataSource.class)
                 .build();
-        ds.setPoolName("poolproxy-test");
+        ds.setPoolName("pool-proxy-test");
         ds.addDataSourceProperty("reWriteBatchedInserts", true);
-        ds.addDataSourceProperty("ApplicationName", "poolproxy-test");
+        ds.addDataSourceProperty("ApplicationName", "pool-proxy-test");
         return ds;
     }
 }
 ```
             
-The table schema used by the library is available [here](poolproxy-core/src/main/resources/db/create.sql).
+The table schema used by the library is available [here](pool-proxy-core/src/main/resources/db/schema-cockroachdb.sql).
 
 # Building
 
@@ -107,7 +107,7 @@ Ubuntu:
 
 ## Clone the project
 
-    git clone git@github.com:kai-niemi/poolproxy && cd poolproxy
+    git clone git@github.com:kai-niemi/pool-proxy && cd pool-proxy
 
 ## Build the artifact
 

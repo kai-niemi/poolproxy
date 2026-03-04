@@ -1,8 +1,0 @@
-${AnsiColor.BRIGHT_YELLOW}^__^
-(oo)\_______
-(__)\       )\/\
-   ||----w |
-   ||     ||
-${AnsiColor.BRIGHT_CYAN}${application.title:Test} ${application.formatted-version:v1.0.0-SNAPSHOT}
-${AnsiColor.BRIGHT_GREEN}Powered by Spring Boot${spring-boot.formatted-version}
-${AnsiColor.BRIGHT_GREEN}     Active profiles: ${AnsiColor.BRIGHT_YELLOW}${spring.profiles.active}${AnsiColor.DEFAULT}

@@ -5,12 +5,12 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.0</version>
+        <version>4.0.3</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
-    <groupId>io.cockroachdb.poolproxy</groupId>
-    <artifactId>poolproxy-parent</artifactId>
+    <groupId>io.cockroachdb.pool</groupId>
+    <artifactId>pool-proxy-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
@@ -25,26 +25,17 @@
         <java.version>21</java.version>
         <maven.compiler.xlint.extras/>
         <groups>unit-test</groups>
-
-        <spring-shell.version>3.4.1</spring-shell.version>
     </properties>
 
     <modules>
-        <module>poolproxy-core</module>
-        <module>poolproxy-hikaricp</module>
-        <module>poolproxy-c3p0</module>
-        <module>poolproxy-test</module>
+        <module>pool-proxy-core</module>
+        <module>pool-proxy-hikaricp</module>
+        <module>pool-proxy-c3p0</module>
+        <module>pool-proxy-sandbox</module>
     </modules>
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>org.springframework.shell</groupId>
-                <artifactId>spring-shell-dependencies</artifactId>
-                <version>${spring-shell.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
             <dependency>
                 <groupId>net.ttddyy</groupId>
                 <artifactId>datasource-proxy</artifactId>
@@ -58,12 +49,7 @@
             <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
-                <version>42.7.8</version>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate.orm</groupId>
-                <artifactId>hibernate-core</artifactId>
-                <version>6.6.26.Final</version>
+                <version>42.7.10</version>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
@@ -71,15 +57,20 @@
                 <version>5.14.0</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>org.hibernate.orm</groupId>
+                <artifactId>hibernate-core</artifactId>
+                <version>7.2.4.Final</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
-    <inceptionYear>2025</inceptionYear>
+    <inceptionYear>2026</inceptionYear>
 
     <scm>
-        <connection>scm:git:git@github.com:kai-niemi/poolproxy.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com:kai-niemi/poolproxy.git</developerConnection>
-        <url>https://github.com/kai-niemi/poolproxy.git</url>
+        <connection>scm:git:git@github.com:kai-niemi/pool-proxy.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:kai-niemi/pool-proxy.git</developerConnection>
+        <url>https://github.com/kai-niemi/pool-proxy.git</url>
         <tag>HEAD</tag>
     </scm>
 
@@ -101,7 +92,7 @@
 
     <issueManagement>
         <system>GitHub</system>
-        <url>https://github.com/kai-niemi/poolproxy/issues</url>
+        <url>https://github.com/kai-niemi/pool-proxy/issues</url>
     </issueManagement>
 
     <build>
@@ -146,7 +137,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>3.4.2</version>
+                    <version>3.5.0</version>
                     <configuration>
                         <archive>
                             <manifestEntries>
@@ -174,7 +165,6 @@
                     <version>3.5.4</version>
                     <configuration>
                         <groups>${groups}</groups>
-<!--                        <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>-->
                     </configuration>
                 </plugin>
             </plugins>
