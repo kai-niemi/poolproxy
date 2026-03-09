@@ -14,8 +14,8 @@ public interface PoolAdapter {
     /**
      * Apply specified pool size dimensions.
      *
-     * @param minIdle min idle pool size
-     * @param maxSize max pool size
+     * @param minIdle     min idle pool size
+     * @param maxSize     max pool size
      * @param maxLifeTime max connection lifetime
      * @throws SQLException on any communication/configuration errors
      */

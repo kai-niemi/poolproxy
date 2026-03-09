@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import io.cockroachdb.pool.proxy.model.ClusterInfo;
 import io.cockroachdb.pool.proxy.model.PoolMetrics;
 import io.cockroachdb.pool.proxy.repository.ClusterRepository;
-import io.cockroachdb.pool.proxy.repository.PoolMetricsRepository;
+import io.cockroachdb.pool.proxy.repository.MetricsRepository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doNothing;
@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 public class C3P0DataSourceProxyTest extends AbstractIntegrationTest {
     private static ClusterRepository clusterRepositoryMock;
 
-    private static PoolMetricsRepository poolMetricsRepositoryMock;
+    private static MetricsRepository metricsRepositoryMock;
 
     @Autowired
     private DataSource dataSource;
@@ -40,12 +40,12 @@ public class C3P0DataSourceProxyTest extends AbstractIntegrationTest {
 //        when(clusterRepositoryMock.findByName(anyString())).thenReturn(
 //                Optional.of(PoolBaseline.withDefaults()));
 
-        poolMetricsRepositoryMock = mock(PoolMetricsRepository.class);
-        doNothing().when(poolMetricsRepositoryMock).createOrUpdate(any());
-        doNothing().when(poolMetricsRepositoryMock).deleteByName(any());
-        when(poolMetricsRepositoryMock.findByName(any())).thenReturn(
+        metricsRepositoryMock = mock(MetricsRepository.class);
+        doNothing().when(metricsRepositoryMock).createOrUpdate(any());
+        doNothing().when(metricsRepositoryMock).deleteByName(any());
+        when(metricsRepositoryMock.findByName(any())).thenReturn(
                 Optional.of(PoolMetrics.withDefaults("test")));
-        when(poolMetricsRepositoryMock.countAll()).thenReturn(1);
+        when(metricsRepositoryMock.countAll()).thenReturn(1);
     }
 
     @Test
@@ -59,7 +59,7 @@ public class C3P0DataSourceProxyTest extends AbstractIntegrationTest {
         C3P0DataSourceProxy dataSourceProxy = new C3P0DataSourceProxy();
         dataSourceProxy.setTargetDataSource(dataSource);
         dataSourceProxy.setClusterRepository(clusterRepositoryMock);
-        dataSourceProxy.setPoolMetricsRepository(poolMetricsRepositoryMock);
+        dataSourceProxy.setPoolMetricsRepository(metricsRepositoryMock);
         dataSourceProxy.afterPropertiesSet();
 
         try (Connection connection = dataSourceProxy.getConnection()) {
@@ -83,7 +83,7 @@ public class C3P0DataSourceProxyTest extends AbstractIntegrationTest {
         C3P0DataSourceProxy dataSourceProxy = new C3P0DataSourceProxy();
         dataSourceProxy.setTargetDataSource(dataSource);
         dataSourceProxy.setClusterRepository(clusterRepositoryMock);
-        dataSourceProxy.setPoolMetricsRepository(poolMetricsRepositoryMock);
+        dataSourceProxy.setPoolMetricsRepository(metricsRepositoryMock);
         dataSourceProxy.afterPropertiesSet();
 
         try (Connection connection = dataSourceProxy.getConnection()) {

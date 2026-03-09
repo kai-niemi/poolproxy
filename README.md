@@ -5,6 +5,7 @@
   * [Main features](#main-features)
   * [Compatibility](#compatibility)
   * [How to use](#how-to-use)
+  * [Schema](#schema)
 * [Building](#building)
   * [Install the JDK](#install-the-jdk)
   * [Clone the project](#clone-the-project)
@@ -14,14 +15,13 @@
 
 # About
 
-A simple database connection pool proxy library for CockroachDB. It configures the pool size 
-and timeouts based on CockroachDB [production guidelines](https://www.cockroachlabs.com/docs/v25.3/connection-pooling?filters=advanced#size-connection-pools) 
-relative to cluster provisioning and node availability. 
+A database connection pool proxy for CockroachDB that configures pool size 
+and timeouts based on CockroachDB [production guidelines](https://www.cockroachlabs.com/docs/v25.3/connection-pooling?filters=advanced#size-connection-pools) relative 
+to cluster provisioning and node availability. 
 
-In addition, it periodically adjusts the pool size based on 
-current node availability and aggregated pool metrics. Thus, the goal is to provide
-a fair distribution of pool quotas based on active application (pool) instances and
-total cluster vCPU count.
+In addition, it periodically adjusts the pool size based on current node availability 
+and aggregated pool metrics. The goal is to provide a fair distribution of connection 
+quotas based on active application (pool) instances and total cluster vCPU count.
 
 The following diagram illustrates the concept. A pool proxy wraps a target connection 
 pool datasource like HikariCP. Connection acquisition and all other mechanics are passed 
@@ -29,12 +29,11 @@ through directly to the target datasource. The proxy only adjusts the `minIdle` 
 `maxPoolSize` settings and `maxLifetime` that should be lower than any database imposed 
 connection timeout.
 
-![img](pool-proxy.jpg)
+![img](.github/poolproxy.jpg)
 
 ## Main features
 
-- Supports HikariCP
-- Supports C3P0
+- Supports HikariCP and C3P0
 - Dynamic and fixed size pool sizing strategies
 - Database driven pool configuration and statistics aggregation
 
@@ -43,7 +42,7 @@ connection timeout.
 - JDK21+
 - MacOS / Linux
 - CockroachDB
-- Spring Boot 3.x
+- Spring Boot 4.x
 
 ## How to use
            
@@ -56,7 +55,6 @@ UUID is used instead scoped to the app life cycle.
 @EnableTransactionManagement(proxyTargetClass = true)
 public class JpaConfig {
     @Bean
-    @ConfigurationProperties("spring.datasource")
     public DataSourceProperties dataSourceProperties() {
         return new DataSourceProperties();
     }
@@ -81,15 +79,24 @@ public class JpaConfig {
                 .initializeDataSourceBuilder()
                 .type(HikariDataSource.class)
                 .build();
-        ds.setPoolName("pool-proxy-test");
         ds.addDataSourceProperty("reWriteBatchedInserts", true);
         ds.addDataSourceProperty("ApplicationName", "pool-proxy-test");
         return ds;
     }
 }
 ```
-            
-The table schema used by the library is available [here](pool-proxy-core/src/main/resources/db/schema-cockroachdb.sql).
+
+## Schema
+
+The table schema used is available [here](pool-proxy-core/src/main/resources/io/cockroachdb/pool/proxy/schema-cockroachdb.sql).
+
+Notice that you need to set the session variable `allow_unsafe_internals=true` since v26.1.0 because 
+the library queries internal CockroachDB tables to resolve cluster total vCPU count.
+
+Internal tables queried:
+
+- crdb_internal.node_metrics
+- crdb_internal.gossip_nodes
 
 # Building
 

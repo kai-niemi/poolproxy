@@ -8,10 +8,6 @@ import io.cockroachdb.pool.proxy.model.ClusterInfo;
  * @author Kai Niemi
  */
 public interface ClusterRepository {
-    void initSchema();
-
-    void dropSchema();
-
     /**
      * Retrieves cluster information used for pool sizing.
      *

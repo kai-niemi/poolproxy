@@ -1,0 +1,9 @@
+${AnsiColor.BRIGHT_YELLOW}
+──▄──▄────▄▀     C o n n e c t i o n
+───▀▄─█─▄▀▄▄▄    ▄▖    ▜   ▄▖
+▄██▄████▄██▄▀█▄  ▙▌▛▌▛▌▐   ▙▌▛▘▛▌▚▘▌▌
+─▀▀─█▀█▀▄▀███▀   ▌ ▙▌▙▌▐▖  ▌ ▌ ▙▌▞▖▙▌
+──▄▄▀─█──▀▄▄                       ▄▌
+${AnsiColor.BRIGHT_GREEN}${application.title:Connection Pool Proxy}${application.formatted-version: v1.0.0} powered by Spring Boot${spring-boot.formatted-version}
+${AnsiColor.BRIGHT_GREEN}   Active profiles: ${AnsiColor.BRIGHT_YELLOW}${spring.profiles.active}${AnsiColor.DEFAULT}
+${AnsiColor.BRIGHT_GREEN}      Database URL: ${AnsiColor.BRIGHT_YELLOW}${spring.datasource.url}${AnsiColor.DEFAULT}

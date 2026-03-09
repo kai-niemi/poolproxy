@@ -15,18 +15,21 @@ import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.NonTransientDataAccessException;
+import org.springframework.dao.TransientDataAccessException;
 import org.springframework.jdbc.datasource.DelegatingDataSource;
 import org.springframework.util.Assert;
 
 import io.cockroachdb.pool.proxy.model.ClusterInfo;
 import io.cockroachdb.pool.proxy.model.PoolBaseline;
 import io.cockroachdb.pool.proxy.model.PoolMetrics;
+import io.cockroachdb.pool.proxy.model.PoolStrategy;
+import io.cockroachdb.pool.proxy.repository.BaselineRepository;
 import io.cockroachdb.pool.proxy.repository.ClusterRepository;
-import io.cockroachdb.pool.proxy.repository.PoolBaselineRepository;
-import io.cockroachdb.pool.proxy.repository.PoolMetricsRepository;
+import io.cockroachdb.pool.proxy.repository.MetricsRepository;
+import io.cockroachdb.pool.proxy.repository.jdbc.JdbcBaselineRepository;
 import io.cockroachdb.pool.proxy.repository.jdbc.JdbcClusterRepository;
-import io.cockroachdb.pool.proxy.repository.jdbc.JdbcPoolBaselineRepository;
-import io.cockroachdb.pool.proxy.repository.jdbc.JdbcPoolMetricsRepository;
+import io.cockroachdb.pool.proxy.repository.jdbc.JdbcMetricsRepository;
 
 /**
  * An abstract pooling datasource proxy, adding elastic pool size and timeout
@@ -42,15 +45,15 @@ import io.cockroachdb.pool.proxy.repository.jdbc.JdbcPoolMetricsRepository;
  */
 public abstract class AbstractPoolingDataSourceProxy<T extends DataSource> extends DelegatingDataSource
         implements AutoCloseable {
-    private static final int UPDATE_INTERVAL = 30;
+    private static final long UPDATE_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(30);
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private ClusterRepository clusterRepository;
 
-    private PoolBaselineRepository poolBaselineRepository;
+    private BaselineRepository baselineRepository;
 
-    private PoolMetricsRepository poolMetricsRepository;
+    private MetricsRepository metricsRepository;
 
     private ScheduledExecutorService scheduledExecutorService;
 
@@ -58,13 +61,18 @@ public abstract class AbstractPoolingDataSourceProxy<T extends DataSource> exten
 
     private String baseline;
 
-    private boolean initialized;
+    private long updateIntervalMillis = UPDATE_INTERVAL_MILLIS;
 
     public AbstractPoolingDataSourceProxy() {
     }
 
     public AbstractPoolingDataSourceProxy(DataSource targetDataSource) {
         super(targetDataSource);
+    }
+
+    public void setUpdateIntervalMillis(long updateIntervalMillis) {
+        Assert.isNull(scheduledExecutorService, "Liveness updater already started");
+        this.updateIntervalMillis = updateIntervalMillis;
     }
 
     public void setPoolName(String poolName) {
@@ -79,20 +87,29 @@ public abstract class AbstractPoolingDataSourceProxy<T extends DataSource> exten
         this.clusterRepository = clusterRepository;
     }
 
-    public void setPoolBaselineRepository(PoolBaselineRepository poolBaselineRepository) {
-        this.poolBaselineRepository = poolBaselineRepository;
+    public void setPoolBaselineRepository(BaselineRepository baselineRepository) {
+        this.baselineRepository = baselineRepository;
     }
 
-    public void setPoolMetricsRepository(PoolMetricsRepository poolMetricsRepository) {
-        this.poolMetricsRepository = poolMetricsRepository;
+    public void setPoolMetricsRepository(MetricsRepository metricsRepository) {
+        this.metricsRepository = metricsRepository;
+    }
+
+    @Override
+    public Connection getConnection() throws SQLException {
+        return super.getConnection();
+    }
+
+    @Override
+    public Connection getConnection(String username, String password) throws SQLException {
+        return super.getConnection(username, password);
     }
 
     @Override
     public void close() {
         try {
-            logger.trace("Closing (on close) datasource: {}", getTargetDataSource());
-            poolMetricsRepository.deleteByName(poolName);
-
+            logger.debug("Closing (on close) datasource: {}", getTargetDataSource());
+            metricsRepository.deleteByName(poolName);
             scheduledExecutorService.shutdownNow();
         } catch (DataAccessException ex) {
             logger.warn("Unable to delete pool instance", ex);
@@ -114,81 +131,60 @@ public abstract class AbstractPoolingDataSourceProxy<T extends DataSource> exten
         if (Objects.isNull(clusterRepository)) {
             clusterRepository = new JdbcClusterRepository(obtainTargetDataSource());
         }
-        clusterRepository.initSchema();
 
-        if (Objects.isNull(poolBaselineRepository)) {
-            poolBaselineRepository = new JdbcPoolBaselineRepository(obtainTargetDataSource());
+        if (Objects.isNull(baselineRepository)) {
+            baselineRepository = new JdbcBaselineRepository(obtainTargetDataSource());
         }
 
-        if (Objects.isNull(poolMetricsRepository)) {
-            poolMetricsRepository = new JdbcPoolMetricsRepository(obtainTargetDataSource());
+        if (Objects.isNull(metricsRepository)) {
+            metricsRepository = new JdbcMetricsRepository(obtainTargetDataSource());
         }
 
-        // Schedule periodic liveness updates
-
-        scheduledExecutorService = Executors.newScheduledThreadPool(1);
-        scheduledExecutorService.scheduleAtFixedRate(() -> {
-            try {
-                applyDataSourceProperties();
-            } catch (SQLException e) {
-                logger.warn("Failed to update pool instance liveness record", e);
-            }
-        }, 5, UPDATE_INTERVAL, TimeUnit.SECONDS);
-    }
-
-    @Override
-    public Connection getConnection() throws SQLException {
-        if (!initialized) {
-            applyDataSourceProperties();
-            initialized = true;
-        }
-        return super.getConnection();
-    }
-
-    @Override
-    public Connection getConnection(String username, String password) throws SQLException {
-        if (!initialized) {
-            applyDataSourceProperties();
-            initialized = true;
-        }
-        return super.getConnection(username, password);
-    }
-
-    private void applyDataSourceProperties() throws SQLException {
         Assert.notNull(baseline, "baseline not set");
         Assert.notNull(poolName, "poolName not set");
 
-        final ClusterInfo clusterInfo = clusterRepository.findClusterInfo();
+        startLivenessUpdater();
+    }
 
-        final PoolBaseline poolBaseline = poolBaselineRepository.findByName(baseline)
+    private void startLivenessUpdater() {
+        scheduledExecutorService = Executors.newScheduledThreadPool(1);
+        scheduledExecutorService.scheduleAtFixedRate(() -> {
+            try {
+                PoolAdapter poolAdapter = poolAdapter();
+                applyDataSourceProperties(poolAdapter);
+            } catch (SQLException e) {
+                logger.error("SQL exception updating pool instance liveness record", e);
+            } catch (NonTransientDataAccessException e) {
+                logger.error("Non-transient exception updating pool instance liveness record", e);
+            } catch (TransientDataAccessException e) {
+                logger.warn("Transient SQL exception updating pool instance liveness record", e);
+            }
+        }, TimeUnit.SECONDS.toMillis(5), updateIntervalMillis, TimeUnit.MILLISECONDS);
+    }
+
+    private void applyDataSourceProperties(PoolAdapter poolAdapter) throws SQLException {
+        int poolCountBefore = Math.max(1, metricsRepository.countAll());
+
+        PoolBaseline poolBaseline = baselineRepository.findByName(baseline)
                 .orElse(PoolBaseline.withDefaults());
+        PoolStrategy poolStrategy = poolBaseline.getPoolingStrategy();
 
-        PoolingStrategy poolingStrategy = poolBaseline.getPoolingStrategy();
-        Objects.requireNonNull(poolingStrategy, "poolingStrategy not set");
+        PoolMetrics poolMetricsBefore = poolMetrics(poolAdapter, poolBaseline);
+        metricsRepository.createOrUpdate(poolMetricsBefore);
 
-        final int poolCountBefore = Math.max(1, poolMetricsRepository.countAll());
+        int poolCountAfter = Math.max(1, metricsRepository.countAll());
 
-        final PoolMetrics poolMetricsBefore = poolAdapter().collectPoolMetrics();
-        poolMetricsBefore.setPoolName(poolName);
-        poolMetricsBefore.setExpiredAt(LocalDateTime.now().plusSeconds(poolBaseline.getLivenessInterval()));
+        ClusterInfo clusterInfo = clusterRepository.findClusterInfo();
+        int minIdle = poolStrategy.minIdle(clusterInfo, poolBaseline, poolCountAfter);
+        int maxSize = poolStrategy.maxSize(clusterInfo, poolBaseline, poolCountAfter);
+        Duration maxLifeTime = poolStrategy.maxLifetime(clusterInfo, poolBaseline, poolCountAfter);
 
-        poolMetricsRepository.createOrUpdate(poolMetricsBefore);
-
-        final int poolCountAfter = Math.max(1, poolMetricsRepository.countAll());
-
-        int minIdle = poolingStrategy.minIdle(clusterInfo, poolBaseline, poolCountAfter);
-        int maxSize = poolingStrategy.maxSize(clusterInfo, poolBaseline, poolCountAfter);
-        Duration maxLifeTime = poolingStrategy.maxLifetime(clusterInfo, poolBaseline, poolCountAfter);
-
-        poolAdapter().applyPoolConfiguration(minIdle, maxSize, maxLifeTime);
+        poolAdapter.applyPoolConfiguration(minIdle, maxSize, maxLifeTime);
 
         if (logger.isDebugEnabled()) {
-            final PoolMetrics poolMetricsAfter = poolAdapter().collectPoolMetrics();
-            poolMetricsAfter.setPoolName(poolMetricsBefore.getPoolName());
-            poolMetricsAfter.setExpiredAt(poolMetricsBefore.getExpiredAt());
-
+            PoolMetrics poolMetricsAfter = poolMetrics(poolAdapter, poolBaseline);
             logger.debug(("""
-                    Updating connection pool:
+                    Updated connection pool:
                                    Pool name: %s
                                 Cluster info: %s
                                Pool baseline: %s
@@ -210,6 +206,15 @@ public abstract class AbstractPoolingDataSourceProxy<T extends DataSource> exten
                             maxLifeTime
                     ));
         }
+    }
+
+    private PoolMetrics poolMetrics(PoolAdapter poolAdapter,
+                                    PoolBaseline poolBaseline) throws SQLException {
+        final PoolMetrics poolMetrics = poolAdapter.collectPoolMetrics();
+        poolMetrics.setPoolName(poolName);
+        poolMetrics.setExpiredAt(LocalDateTime.now()
+                .plusSeconds(poolBaseline.getLivenessInterval()));
+        return poolMetrics;
     }
 
     protected abstract T unwrapTargetDataSource() throws SQLException;

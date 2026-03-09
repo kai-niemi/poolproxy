@@ -10,9 +10,8 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-
-import io.cockroachdb.pool.proxy.repository.jdbc.JdbcClusterRepository;
 
 @SpringBootTest(classes = {TestApplication.class}, useMainMethod = SpringBootTest.UseMainMethod.NEVER)
 //@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -20,9 +19,13 @@ import io.cockroachdb.pool.proxy.repository.jdbc.JdbcClusterRepository;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @Tag("integration-test")
 @ActiveProfiles({"default", "test"})
+@Import(SchemaConfiguration.class)
 public abstract class AbstractIntegrationTest {
     @Autowired
     private DataSource dataSource;
+
+    @Autowired
+    private SchemaConfiguration schemaConfiguration;
 
     protected DataSource getDataSource() {
         return dataSource;
@@ -30,11 +33,11 @@ public abstract class AbstractIntegrationTest {
 
     @BeforeAll
     public void initSchemaBeforeAll() {
-        new JdbcClusterRepository(getDataSource()).initSchema();
+        schemaConfiguration.initSchema(dataSource);
     }
 
     @AfterAll
     public void dropSchemaAfterAll() {
-        new JdbcClusterRepository(getDataSource()).dropSchema();
+        schemaConfiguration.dropSchema(dataSource);
     }
 }

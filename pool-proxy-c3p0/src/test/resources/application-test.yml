@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:26257/defaultdb?sslmode=disable
+    url: jdbc:postgresql://localhost:26257/defaultdb?sslmode=disable&allow_unsafe_internals=true
     driver-class-name: org.postgresql.Driver
     username: root
     password:

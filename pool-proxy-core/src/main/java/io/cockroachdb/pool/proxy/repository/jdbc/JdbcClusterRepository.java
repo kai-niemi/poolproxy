@@ -1,12 +1,8 @@
 package io.cockroachdb.pool.proxy.repository.jdbc;
 
-import javax.sql.DataSource;
+import java.util.Objects;
 
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.init.DatabasePopulatorUtils;
-import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
-import org.springframework.util.Assert;
+import javax.sql.DataSource;
 
 import io.cockroachdb.pool.proxy.model.ClusterInfo;
 import io.cockroachdb.pool.proxy.repository.ClusterRepository;
@@ -14,7 +10,7 @@ import io.cockroachdb.pool.proxy.repository.ClusterRepository;
 /**
  * @author Kai Niemi
  */
-public class JdbcClusterRepository implements ClusterRepository {
+public class JdbcClusterRepository extends AbstractPoolRepository implements ClusterRepository {
     private static final String SQL_VCPU_TOTAL = """
             SELECT ceil((
                 (SELECT value FROM crdb_internal.node_metrics WHERE name = 'sys.cpu.user.percent')
@@ -33,43 +29,18 @@ public class JdbcClusterRepository implements ClusterRepository {
             WHERE is_live = true
             """;
 
-    private final JdbcTemplate jdbcTemplate;
-
     public JdbcClusterRepository(DataSource dataSource) {
-        Assert.notNull(dataSource, "dataSource is null");
-        this.jdbcTemplate = new JdbcTemplate(dataSource);
-    }
-
-    @Override
-    public void initSchema() {
-        ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
-        populator.setCommentPrefix("--");
-        populator.setIgnoreFailedDrops(true);
-        populator.addScript(new ClassPathResource("io/cockroachdb/pool/proxy/schema-cockroachdb.sql"));
-
-        DatabasePopulatorUtils.execute(populator, jdbcTemplate.getDataSource());
-
-        jdbcTemplate.execute("INSERT INTO pool_baseline (name) VALUES ('default')");
-        jdbcTemplate.execute("SET allow_unsafe_internals = on");
-    }
-
-    @Override
-    public void dropSchema() {
-        ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
-        populator.setCommentPrefix("--");
-        populator.setIgnoreFailedDrops(false);
-        populator.addScript(new ClassPathResource("db/drop.sql"));
-
-        DatabasePopulatorUtils.execute(populator, jdbcTemplate.getDataSource());
+        super(dataSource);
     }
 
     @Override
     public ClusterInfo findClusterInfo() {
-        Integer vCPUs = jdbcTemplate.queryForObject(SQL_VCPU_TOTAL, Integer.class);
-        return jdbcTemplate.queryForObject(SQL_CLUSTER_SUMMARY,
+        Integer vCPUs = getJdbcTemplate().queryForObject(SQL_VCPU_TOTAL, Integer.class);
+
+        return getJdbcTemplate().queryForObject(SQL_CLUSTER_SUMMARY,
                 (rs, rowNum) -> {
                     ClusterInfo clusterInfo = new ClusterInfo();
-                    clusterInfo.setNumVCPUs(Math.max(1, vCPUs));
+                    clusterInfo.setNumVCPUs(Math.max(1, Objects.requireNonNull(vCPUs)));
                     clusterInfo.setClusterId(rs.getString("cluster_id"));
                     clusterInfo.setNumNodes(Math.max(1, rs.getInt("nodes")));
                     clusterInfo.setMinVersion(rs.getString("min_ver"));

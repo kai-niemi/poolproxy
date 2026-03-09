@@ -1,7 +1,5 @@
 package io.cockroachdb.pool.proxy.model;
 
-import io.cockroachdb.pool.proxy.PoolingStrategy;
-
 /**
  * Value object defining a baseline configuration for connection pools.
  *
@@ -14,7 +12,7 @@ public class PoolBaseline {
         baseline.setConnectionTimeout(5 * 60);
         baseline.setMinIdle(4);
         baseline.setMaxSize(512);
-        baseline.setPoolingStrategy(PoolingStrategy.DYNAMIC_SIZE);
+        baseline.setPoolingStrategy(PoolStrategy.DYNAMIC_SIZE);
         return baseline;
     }
 
@@ -28,7 +26,7 @@ public class PoolBaseline {
 
     private int maxSize;
 
-    private PoolingStrategy poolingStrategy;
+    private PoolStrategy poolStrategy;
 
     public String getName() {
         return name;
@@ -70,12 +68,12 @@ public class PoolBaseline {
         this.maxSize = maxSize;
     }
 
-    public PoolingStrategy getPoolingStrategy() {
-        return poolingStrategy;
+    public PoolStrategy getPoolingStrategy() {
+        return poolStrategy;
     }
 
-    public void setPoolingStrategy(PoolingStrategy poolingStrategy) {
-        this.poolingStrategy = poolingStrategy;
+    public void setPoolingStrategy(PoolStrategy poolStrategy) {
+        this.poolStrategy = poolStrategy;
     }
 
     @Override
@@ -86,7 +84,7 @@ public class PoolBaseline {
                ", connectionTimeout=" + connectionTimeout +
                ", minIdle=" + minIdle +
                ", maxSize=" + maxSize +
-               ", poolingStrategy=" + poolingStrategy +
+               ", poolingStrategy=" + poolStrategy +
                '}';
     }
 }

@@ -6,8 +6,8 @@
     <logger name="io.cockroachdb" level="DEBUG"/>
     <logger name="io.cockroachdb.SQL_TRACE" level="TRACE"/>
 
-    <root level="info">
-        <appender-ref ref="console"/>
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
     </root>
 </configuration>
 

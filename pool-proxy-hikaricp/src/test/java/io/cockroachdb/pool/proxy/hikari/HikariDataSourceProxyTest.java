@@ -15,13 +15,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.zaxxer.hikari.HikariDataSource;
 
-import io.cockroachdb.pool.proxy.PoolingStrategy;
+import io.cockroachdb.pool.proxy.model.PoolStrategy;
 import io.cockroachdb.pool.proxy.model.ClusterInfo;
 import io.cockroachdb.pool.proxy.model.PoolBaseline;
 import io.cockroachdb.pool.proxy.model.PoolMetrics;
 import io.cockroachdb.pool.proxy.repository.ClusterRepository;
-import io.cockroachdb.pool.proxy.repository.PoolBaselineRepository;
-import io.cockroachdb.pool.proxy.repository.PoolMetricsRepository;
+import io.cockroachdb.pool.proxy.repository.BaselineRepository;
+import io.cockroachdb.pool.proxy.repository.MetricsRepository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doNothing;
@@ -34,9 +34,9 @@ import static org.mockito.Mockito.when;
 public class HikariDataSourceProxyTest extends AbstractIntegrationTest {
     private static ClusterRepository clusterRepositoryMock;
 
-    private static PoolMetricsRepository poolMetricsRepositoryMock;
+    private static MetricsRepository metricsRepositoryMock;
 
-    private static PoolBaselineRepository poolBaselineRepository;
+    private static BaselineRepository baselineRepository;
 
     @Autowired
     private DataSource dataSource;
@@ -51,22 +51,22 @@ public class HikariDataSourceProxyTest extends AbstractIntegrationTest {
         clusterRepositoryMock = mock(ClusterRepository.class);
         when(clusterRepositoryMock.findClusterInfo()).thenReturn(clusterInfo);
 
-        poolMetricsRepositoryMock = mock(PoolMetricsRepository.class);
-        doNothing().when(poolMetricsRepositoryMock).createOrUpdate(any());
-        doNothing().when(poolMetricsRepositoryMock).deleteByName(any());
-        when(poolMetricsRepositoryMock.findByName(any())).thenReturn(
+        metricsRepositoryMock = mock(MetricsRepository.class);
+        doNothing().when(metricsRepositoryMock).createOrUpdate(any());
+        doNothing().when(metricsRepositoryMock).deleteByName(any());
+        when(metricsRepositoryMock.findByName(any())).thenReturn(
                 Optional.of(PoolMetrics.withDefaults("test")));
-        when(poolMetricsRepositoryMock.countAll()).thenReturn(1);
+        when(metricsRepositoryMock.countAll()).thenReturn(1);
 
         PoolBaseline dynamicBaseline = PoolBaseline.withDefaults();
-        dynamicBaseline.setPoolingStrategy(PoolingStrategy.DYNAMIC_SIZE);
+        dynamicBaseline.setPoolingStrategy(PoolStrategy.DYNAMIC_SIZE);
 
         PoolBaseline fixedBaseline = PoolBaseline.withDefaults();
-        fixedBaseline.setPoolingStrategy(PoolingStrategy.FIXED_SIZE);
+        fixedBaseline.setPoolingStrategy(PoolStrategy.FIXED_SIZE);
 
-        poolBaselineRepository = mock(PoolBaselineRepository.class);
-        when(poolBaselineRepository.findByName(Mockito.eq("dynamic"))).thenReturn(Optional.of(dynamicBaseline));
-        when(poolBaselineRepository.findByName(Mockito.eq("fixed"))).thenReturn(Optional.of(fixedBaseline));
+        baselineRepository = mock(BaselineRepository.class);
+        when(baselineRepository.findByName(Mockito.eq("dynamic"))).thenReturn(Optional.of(dynamicBaseline));
+        when(baselineRepository.findByName(Mockito.eq("fixed"))).thenReturn(Optional.of(fixedBaseline));
     }
 
     @Test
@@ -80,8 +80,8 @@ public class HikariDataSourceProxyTest extends AbstractIntegrationTest {
         HikariDataSourceProxy dataSourceProxy = new HikariDataSourceProxy();
         dataSourceProxy.setTargetDataSource(dataSource);
         dataSourceProxy.setClusterRepository(clusterRepositoryMock);
-        dataSourceProxy.setPoolMetricsRepository(poolMetricsRepositoryMock);
-        dataSourceProxy.setPoolBaselineRepository(poolBaselineRepository);
+        dataSourceProxy.setPoolMetricsRepository(metricsRepositoryMock);
+        dataSourceProxy.setPoolBaselineRepository(baselineRepository);
         dataSourceProxy.setBaseline("dynamic");
         dataSourceProxy.afterPropertiesSet();
 
@@ -108,8 +108,8 @@ public class HikariDataSourceProxyTest extends AbstractIntegrationTest {
         HikariDataSourceProxy dataSourceProxy = new HikariDataSourceProxy();
         dataSourceProxy.setTargetDataSource(dataSource);
         dataSourceProxy.setClusterRepository(clusterRepositoryMock);
-        dataSourceProxy.setPoolMetricsRepository(poolMetricsRepositoryMock);
-        dataSourceProxy.setPoolBaselineRepository(poolBaselineRepository);
+        dataSourceProxy.setPoolMetricsRepository(metricsRepositoryMock);
+        dataSourceProxy.setPoolBaselineRepository(baselineRepository);
         dataSourceProxy.setBaseline("fixed");
         dataSourceProxy.afterPropertiesSet();
 

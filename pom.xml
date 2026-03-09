@@ -31,7 +31,7 @@
         <module>pool-proxy-core</module>
         <module>pool-proxy-hikaricp</module>
         <module>pool-proxy-c3p0</module>
-        <module>pool-proxy-sandbox</module>
+        <module>pool-proxy-demo</module>
     </modules>
 
     <dependencyManagement>
@@ -200,7 +200,7 @@
                             <excludedGroups>unit-test</excludedGroups>
                             <systemPropertyVariables>
                                 <spring.datasource.url>
-                                    jdbc:postgresql://localhost:26257/defaultdb?sslmode=disable
+                                    jdbc:postgresql://localhost:26257/defaultdb?sslmode=disable&amp;allow_unsafe_internals=true
                                 </spring.datasource.url>
                             </systemPropertyVariables>
                         </configuration>

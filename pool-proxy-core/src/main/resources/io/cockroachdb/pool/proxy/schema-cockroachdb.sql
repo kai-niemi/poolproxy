@@ -1,4 +1,4 @@
-create table pool_baseline
+create table if not exists pool_baseline
 (
     name               string not null,
     liveness_interval  int    not null default 30,
@@ -17,7 +17,7 @@ comment on column pool_baseline.min_idle is 'Minimum idle pool size overriding s
 comment on column pool_baseline.max_size is 'Maximum pool size overriding sizing strategy.';
 comment on column pool_baseline.strategy is 'Pool sizing strategy.';
 
-create table pool_metrics
+create table if not exists pool_metrics
 (
     name                        string      not null,
     expired_at                  timestamptz not null default now() + '5 minutes',
@@ -44,3 +44,5 @@ comment on column pool_metrics.idle_count is 'Number of established but idle con
 comment on column pool_metrics.active_count is 'Current number of active connections that have been allocated from the data source.';
 comment on column pool_metrics.total_connections is 'The total number of connections currently in the pool.';
 comment on column pool_metrics.threads_awaiting_connection is 'The number of threads awaiting connections from the pool.';
+
+INSERT INTO pool_baseline (name) VALUES ('default') ON CONFLICT DO NOTHING ;
